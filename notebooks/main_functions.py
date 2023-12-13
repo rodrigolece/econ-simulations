@@ -38,6 +38,7 @@ def montecarlo_game_sbm(
     standard_deviation,
     memory_length,
     update_rule,
+    shocks=None,
 ):
     g, pos = helper_diagonal_sbm(num_players, p_off=0.1)
 
@@ -65,6 +66,13 @@ def montecarlo_game_sbm(
     wealth_df = pd.DataFrame(index=np.arange(num_steps))
     savers_df = pd.DataFrame(index=np.arange(num_steps))
     for simulation in tqdm(range(num_simulations)):
+        clusters = np.zeros(num_players, dtype=int)
+        clusters[: num_players // 2] = 1
+
+        clusters_filt = np.zeros(num_players, dtype=bool)
+        clusters_filt[: num_players // 2] = True
+        cols_clusters = ["total", "saver", "non-saver", "cluster_1", "cluster_2"]
+
         game, savers_init = helper_init(
             g,
             num_players,
@@ -74,15 +82,22 @@ def montecarlo_game_sbm(
             standard_deviation,
             memory_length,
             update_rule,
+            rng=0,
+            groups=clusters,
         )
 
-        clusters = np.zeros(num_players, dtype=bool)
-        clusters[: num_players // 2] = True
-        cols_clusters = ["total", "saver", "non-saver", "cluster_1", "cluster_2"]
-        df, savers_final = helper_run_simulation_with_filter(
-            game, num_steps, clusters, cols_clusters
-        )
-
+        if shocks is None:
+            df, savers_final = helper_run_simulation_with_filter(
+                game, num_steps, clusters_filt, cols_clusters
+            )
+        else:
+            df, savers_final = helper_run_simulation_with_filter(
+                game,
+                num_steps,
+                clusters_filt,
+                cols_clusters,
+                shocks,
+            )
         wealth_df = wealth_df.join(df, rsuffix=f"_{simulation}")
         savers_df = savers_df.join(savers_final, rsuffix=f"_{simulation}")
 
@@ -130,6 +145,7 @@ def montecarlo_game_network(
     standard_deviation,
     memory_length,
     update_rule,
+    shocks=None,
 ):
     data = [
         num_players,
@@ -166,7 +182,10 @@ def montecarlo_game_network(
             update_rule,
         )
 
-        df, savers_final = helper_run_simulation(game, num_steps)
+        if shocks is None:
+            df, savers_final = helper_run_simulation(game, num_steps)
+        else:
+            df, savers_final = helper_run_simulation(game, num_steps, shocks)
 
         wealth_df = wealth_df.join(df, rsuffix=f"_{simulation}")
 

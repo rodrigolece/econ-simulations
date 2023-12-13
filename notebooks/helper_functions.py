@@ -50,7 +50,7 @@ def helper_two_group_assigment(num_nodes, threshold=0.5, seed=0):
 
 
 def _get_broken_down_wealth_by_savers(game):
-    is_saver = [player.get_trait("is_saver") for player in game._players]
+    is_saver = [player.get_trait("is_saver") for player in game._get_players()]
     is_saver = np.array(is_saver)
     return (
         game.get_total_wealth(),
@@ -67,7 +67,7 @@ def _get_broken_down_wealth_by_filter(game, filt):
 
 
 def get_savers_by_cluster(game, filt):
-    is_saver = [player.get_trait("is_saver") for player in game._players]
+    is_saver = [player.get_trait("is_saver") for player in game._get_players()]
     is_saver = np.array(is_saver)
     savers_1 = sum(is_saver[filt])
     savers_2 = sum(is_saver[~filt])
@@ -83,7 +83,12 @@ def _get_metrics(game, is_saver=None):
     )
 
 
-def helper_run_simulation(game, num_steps, cols: Sequence | None = None):
+def helper_run_simulation(
+    game,
+    num_steps,
+    cols: Sequence | None = None,
+    shocks: Sequence | None = None,
+):
     if cols is None:
         cols = ["total", "savers", "non-savers"]
 
@@ -92,15 +97,26 @@ def helper_run_simulation(game, num_steps, cols: Sequence | None = None):
 
     savers = [game.get_num_savers()]
 
-    for _ in range(num_steps):
-        game.play_round()
+    for step in range(num_steps):
         data.append(_get_broken_down_wealth_by_savers(game))
         savers.append(game.get_num_savers())
+
+        if shocks is not None:
+            if shocks[step]:
+                for action in shocks[step]:
+                    action.apply(game)
+        game.play_round()
 
     return pd.DataFrame(data, columns=cols), savers
 
 
-def helper_run_simulation_with_filter(game, num_steps, filt, cols):
+def helper_run_simulation_with_filter(
+    game,
+    num_steps,
+    filt,
+    cols: Sequence | None = None,
+    shocks: Sequence | None = None,
+):
     game.reset_agents()
 
     if len(cols) != 5:
@@ -115,8 +131,10 @@ def helper_run_simulation_with_filter(game, num_steps, filt, cols):
     tup_savers = tuple([game.get_num_savers()]) + savers_by_cluster
     savers = [tup_savers]
 
-    for _ in range(num_steps):
-        game.play_round()
+    for step in range(num_steps):
+        filt = game.create_filter_from_trait("group", 1)
+        filt = np.array(filt, dtype=bool)
+
         wealth = _get_broken_down_wealth_by_savers(
             game
         ) + _get_broken_down_wealth_by_filter(game, filt)
@@ -125,6 +143,12 @@ def helper_run_simulation_with_filter(game, num_steps, filt, cols):
         savers_by_cluster = get_savers_by_cluster(game, filt)
         tup_savers = tuple([game.get_num_savers()]) + savers_by_cluster
         savers.append(tup_savers)
+
+        if shocks is not None:
+            if shocks[step]:
+                for action in shocks[step]:
+                    action.apply(game)
+        game.play_round()
 
     return pd.DataFrame(data, columns=cols), pd.DataFrame(
         savers, columns=["total", "cluster_1", "cluster_2"]
@@ -140,7 +164,7 @@ def helper_run_simulation_by_metrics(game, num_steps):
         game.play_round()
         data.append(_get_metrics(game))
 
-    is_saver_final = [player.get_trait("is_saver") for player in game._players]
+    is_saver_final = [player.get_trait("is_saver") for player in game._get_players()]
 
     return pd.DataFrame(data, columns=["avg_wealth", "frac_savers"]), is_saver_final
 
@@ -155,6 +179,7 @@ def helper_init(
     memory_length,
     update_rule,
     rng=0,
+    groups=None,
 ):
     # Initialise strategy
     strategy = kala.CooperationStrategy(
@@ -167,14 +192,25 @@ def helper_init(
 
     # Initialise players
     is_saver = helper_two_group_assigment(num_players, threshold=group_thresholds)
-    players = [
-        kala.InvestorAgent(
-            is_saver=s,
-            update_from_n_last_games=memory_length,
-            update_rule=update_rule,
-        )
-        for s in is_saver
-    ]
+    if groups is None:
+        players = [
+            kala.InvestorAgent(
+                is_saver=s,
+                updates_from_n_last_games=memory_length,
+                update_rule=update_rule,
+            )
+            for s in is_saver
+        ]
+    else:
+        players = [
+            kala.InvestorAgent(
+                is_saver=s,
+                group=g,
+                updates_from_n_last_games=memory_length,
+                update_rule=update_rule,
+            )
+            for s, g in zip(is_saver, groups)
+        ]
 
     G = kala.SimpleGraph(g, nodes=players)
 
