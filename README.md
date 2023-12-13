@@ -10,10 +10,14 @@ The notebooks and the present repository, although initially thought as a first 
 
 Each of the notebooks has as title the question that wants to answer. 
 
-- 1. How does the wealth of a group evolve with respect to the network structure?
-- 2. What is the effect of memory and update rules when the network and the parameters are kept fixed?
-- 3. How does the wealth of a group evolve with respect to different parameters?
-- 4. How do different types of shocks with different magnitude affect the evolution of the game?
+1. [How does the wealth of a group evolve with respect to the network structure?](https://github.com/rodrigolece/econ-simulations/blob/main/notebooks/1%20-%20How%20does%20the%20wealth%20of%20a%20group%20evolve%20with%20respect%20to%20the%20network%20structure%3F.ipynb)
+2. [What is the effect of memory and update rules when the network and the parameters are kept fixed?](https://github.com/rodrigolece/econ-simulations/blob/main/notebooks/2%20-%20What%20is%20the%20effect%20of%20memory%20and%20update%20rules%20when%20the%20network%20and%20the%20parameters%20are%20kept%20fixed%3F.ipynb)
+3. [How does the number of savers evolve with respect to different parameters?](https://github.com/rodrigolece/econ-simulations/blob/main/notebooks/3%20-%20How%20does%20the%20number%20of%20savers%20evolve%20with%20respect%20to%20different%20parameters%3F.ipynb)
+4. [How do different types of shocks with different magnitude affect the evolution of the game?](https://github.com/rodrigolece/econ-simulations/blob/main/notebooks/4%20-%20How%20shocks%20impact%20the%20population%20of%20savers%3F.ipynb)
+
+We also added two extra lists for reference:
+- [A list with some examples of networks that can be implemented into the simulations.](https://github.com/rodrigolece/econ-simulations/blob/main/notebooks/networks.md)
+- [A list of all the shocks we have implemented in `kala` and that can be used within the simulations.](https://github.com/rodrigolece/econ-simulations/blob/main/notebooks/shocks.md)
 
 ## Installation of ```kala```
 
