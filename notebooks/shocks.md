@@ -47,9 +47,7 @@ The list below makes use of different inputs. Here are the kind of variables the
 
 #### Shocks to the structure of the network
 1. `RemovePlayer(player)`. Remove a given node `player` from the network. The shock also removes the adjacent edges to the selected node.
-    :warning: RemovePlayer has a bug that does not allow to analyse the network after the shock. A shock so strong that even we do not know what to do.
 2. `RemoveRandomPlayer()`. Remove a random node from the nework. The shock also removes the adjacent edges to the random node.
-    :warning: RemovePlayer has a bug that does not allow to analyse the network after the shock. A shock so strong that even we do not know what to do.
 3. `RemoveEdge(player1, player2)`. Remove the edge between `player1` and `player2` from the network.
 4. `RemoveRandomEdge()`. Removes a random edge from the network.
 5. `SwapEdge(pivot, player1, player2)`. Remove edge `(pivot, player1)` and add edge `(pivot, player2)` to the network.
