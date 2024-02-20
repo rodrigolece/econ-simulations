@@ -30,7 +30,8 @@ def plot_dashboard_sbm(g, table, savers_init, pos, wealth, savers):
         colLabels=table.columns,
         loc="center",
         cellLoc="left",
-        colWidths=[0.4, 0.2],
+        # colWidths=[0.4, 0.2],
+        fontsize=15.0,
     )
 
     nx.draw(g, node_color=savers_init, ax=ax[0, 1], pos=pos)
@@ -77,7 +78,7 @@ def plot_dashboard_network(g, table, savers_init, wealth, savers):
         colLabels=table.columns,
         loc="center",
         cellLoc="left",
-        colWidths=[0.4, 0.2],
+        # colWidths=[0.4, 0.2],
     )
 
     nx.draw(g, node_color=savers_init, ax=ax[0, 1])

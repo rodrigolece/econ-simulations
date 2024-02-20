@@ -42,6 +42,19 @@ def montecarlo_game_sbm(
 ):
     g, pos = helper_diagonal_sbm(num_players, p_off=0.1)
 
+    if shocks is not None:
+        list_shocks = []
+        times_shocks = []
+        for t, l in enumerate(shocks):
+            list_shocks += l
+            if len(l) != 0:
+                times_shocks.append(t)
+        list_shocks = [shock.__str__() for shock in list_shocks]
+        list_shocks = list(np.unique(list_shocks))
+    else:
+        list_shocks = "None"
+        times_shocks = "None"
+
     data = [
         num_players,
         num_steps,
@@ -50,6 +63,8 @@ def montecarlo_game_sbm(
         differential_inefficient,
         memory_length,
         update_rule.name,
+        list_shocks,
+        times_shocks,
     ]
     rows = [
         "Number of players",
@@ -59,6 +74,8 @@ def montecarlo_game_sbm(
         "Inefficient differential",
         "Length of memory",
         "Update rule",
+        "Shocks",
+        "Times for shocks",
     ]
 
     table = pd.DataFrame(data, index=rows, columns=["Inputs"])

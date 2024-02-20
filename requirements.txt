@@ -7,3 +7,5 @@ numpy
 pandas
 pendulum
 tqdm
+matplotlib
+seaborn
