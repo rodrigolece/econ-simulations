@@ -10,6 +10,21 @@ from plotting_functions import plot_dashboard_sbm, plot_dashboard_network
 from stats_functions import *
 
 
+def get_gini(game):
+    savings = [player.get_savings() for player in game._get_players()]
+    sorted_savings = sorted(savings)
+    total_wealth = game.get_total_wealth()
+
+    cumsum = np.cumsum(sorted_savings) / total_wealth
+    triangles = np.array([cumsum[i + 1] - cumsum[i] for i in range(len(savings) - 1)])
+    step = 1 / (len(savings) - 1)
+
+    area = sum(step * triangles / 2) + sum(step * cumsum[:-1])
+    gini = 1 - 2 * area
+
+    return gini, cumsum
+
+
 #### SBMs ####
 def helper_diagonal_sbm(num_nodes, p_off, p_diag=1.0, seed=0, return_pos=True):
     """Function to create SBM network"""
@@ -150,8 +165,10 @@ def helper_run_simulation_with_filter(
                     action.apply(game)
         game.play_round()
 
-    return pd.DataFrame(data, columns=cols), pd.DataFrame(
-        savers, columns=["total", "cluster_1", "cluster_2"]
+    return (
+        pd.DataFrame(data, columns=cols),
+        pd.DataFrame(savers, columns=["total", "cluster_1", "cluster_2"]),
+        game,
     )
 
 

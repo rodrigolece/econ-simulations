@@ -5,6 +5,8 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
+import matplotlib.ticker as mtick
+
 
 def plot_mean_and_std(df, label, color, ax):
     col = label.lower().replace(" ", "_")
@@ -19,7 +21,37 @@ def plot_mean_and_std(df, label, color, ax):
     )
 
 
-def plot_dashboard_sbm(g, table, savers_init, pos, wealth, savers):
+def plot_gini(cumsum, ax):
+    arr_percentage = np.linspace(0, 100, len(cumsum))
+    ax.plot(arr_percentage, 100 * cumsum)
+    ax.plot(arr_percentage, arr_percentage)
+
+    ax.set_xlim(0, 100)
+    ax.set_ylim(0, 100)
+
+    ax.xaxis.set_major_formatter(mtick.PercentFormatter())
+    ax.yaxis.set_major_formatter(mtick.PercentFormatter())
+
+    ax.grid(alpha=0.3)
+
+    ax.fill_between(
+        arr_percentage,
+        np.zeros(len(cumsum)),
+        100 * cumsum,
+        alpha=0.3,
+    )
+    ax.fill_between(
+        arr_percentage,
+        100 * cumsum,
+        arr_percentage,
+        alpha=0.3,
+    )
+
+    ax.set_xlabel("Cumulative share of players")
+    ax.set_ylabel("Cumulative share of wealth")
+
+
+def plot_dashboard_sbm(g, table, savers_init, pos, wealth, savers, cumsum):
     fig, ax = plt.subplots(nrows=3, ncols=2, figsize=(12, 16))
 
     ax[0, 0].axis("off")
@@ -64,11 +96,12 @@ def plot_dashboard_sbm(g, table, savers_init, pos, wealth, savers):
     ax[2, 0].set_title("evolution of savers")
     ax[2, 0].legend()
 
-    ax[2, 1].axis("off")
+    # ax[2, 1].off()
+    plot_gini(cumsum, ax[2, 1])
 
 
-def plot_dashboard_network(g, table, savers_init, wealth, savers):
-    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(12, 16))
+def plot_dashboard_network(g, table, savers_init, wealth, savers, cumsum):
+    fig, ax = plt.subplots(nrows=3, ncols=2, figsize=(12, 16))
 
     ax[0, 0].axis("off")
     ax[0, 0].axis("tight")
@@ -99,6 +132,8 @@ def plot_dashboard_network(g, table, savers_init, wealth, savers):
     ax[1, 1].set_xlabel("Step")
     ax[1, 1].set_title("evolution of savers")
     ax[1, 1].legend()
+
+    plot_gini(cumsum, ax[2, 1])
 
 
 def plot_stability_phase_diagrams(

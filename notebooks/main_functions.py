@@ -9,6 +9,7 @@ from helper_functions import (
     helper_run_simulation_with_filter,
     helper_run_simulation,
     helper_run_simulation_by_metrics,
+    get_gini,
 )
 
 from plotting_functions import (
@@ -55,33 +56,10 @@ def montecarlo_game_sbm(
         list_shocks = "None"
         times_shocks = "None"
 
-    data = [
-        num_players,
-        num_steps,
-        num_simulations,
-        differential_efficient,
-        differential_inefficient,
-        memory_length,
-        update_rule.name,
-        list_shocks,
-        times_shocks,
-    ]
-    rows = [
-        "Number of players",
-        "Number of steps",
-        "Number of simulations",
-        "Efficient differential",
-        "Inefficient differential",
-        "Length of memory",
-        "Update rule",
-        "Shocks",
-        "Times for shocks",
-    ]
-
-    table = pd.DataFrame(data, index=rows, columns=["Inputs"])
-
     wealth_df = pd.DataFrame(index=np.arange(num_steps))
     savers_df = pd.DataFrame(index=np.arange(num_steps))
+    cumsum_df = np.zeros((num_simulations, num_players))
+    gini_arr = []
     for simulation in tqdm(range(num_simulations)):
         clusters = np.zeros(num_players, dtype=int)
         clusters[: num_players // 2] = 1
@@ -104,11 +82,11 @@ def montecarlo_game_sbm(
         )
 
         if shocks is None:
-            df, savers_final = helper_run_simulation_with_filter(
+            df, savers_final, game = helper_run_simulation_with_filter(
                 game, num_steps, clusters_filt, cols_clusters
             )
         else:
-            df, savers_final = helper_run_simulation_with_filter(
+            df, savers_final, game = helper_run_simulation_with_filter(
                 game,
                 num_steps,
                 clusters_filt,
@@ -117,6 +95,14 @@ def montecarlo_game_sbm(
             )
         wealth_df = wealth_df.join(df, rsuffix=f"_{simulation}")
         savers_df = savers_df.join(savers_final, rsuffix=f"_{simulation}")
+        gini, cumsum = get_gini(game)
+        if len(cumsum) != num_players:
+            cumsum = np.roll(
+                np.append(cumsum, np.zeros(num_players - len(cumsum))),
+                num_players - len(cumsum),
+            )
+        cumsum_df[simulation, :] = cumsum
+        gini_arr.append(gini)
 
     wealth = pd.DataFrame(index=np.arange(num_steps))
     for col_name in cols_clusters:
@@ -148,7 +134,36 @@ def montecarlo_game_sbm(
         savers = savers.join(mean)
         savers = savers.join(std)
 
-    plot_dashboard_sbm(g, table, savers_init, pos, wealth, savers)
+    data = [
+        num_players,
+        num_steps,
+        num_simulations,
+        differential_efficient,
+        differential_inefficient,
+        memory_length,
+        update_rule.name,
+        f"{round(np.mean(gini_arr), 3)} +/- {round(np.std(gini_arr), 3)}",
+        list_shocks,
+        times_shocks,
+    ]
+    rows = [
+        "Number of players",
+        "Number of steps",
+        "Number of simulations",
+        "Efficient differential",
+        "Inefficient differential",
+        "Length of memory",
+        "Update rule",
+        "Gini coefficient",
+        "Shocks",
+        "Times for shocks",
+    ]
+
+    table = pd.DataFrame(data, index=rows, columns=["Inputs"])
+
+    plot_dashboard_sbm(
+        g, table, savers_init, pos, wealth, savers, cumsum_df.mean(axis=0)
+    )
 
 
 def montecarlo_game_network(
@@ -164,29 +179,23 @@ def montecarlo_game_network(
     update_rule,
     shocks=None,
 ):
-    data = [
-        num_players,
-        num_steps,
-        num_simulations,
-        differential_efficient,
-        differential_inefficient,
-        memory_length,
-        update_rule.name,
-    ]
-    rows = [
-        "Number of players",
-        "Number of steps",
-        "Number of simulations",
-        "Efficient differential",
-        "Inefficient differential",
-        "Length of memory",
-        "Update rule",
-    ]
-
-    table = pd.DataFrame(data, index=rows, columns=["Inputs"])
+    if shocks is not None:
+        list_shocks = []
+        times_shocks = []
+        for t, l in enumerate(shocks):
+            list_shocks += l
+            if len(l) != 0:
+                times_shocks.append(t)
+        list_shocks = [shock.__str__() for shock in list_shocks]
+        list_shocks = list(np.unique(list_shocks))
+    else:
+        list_shocks = "None"
+        times_shocks = "None"
 
     wealth_df = pd.DataFrame(index=np.arange(num_steps))
     savers_df = pd.DataFrame(index=np.arange(num_steps + 1))
+    cumsum_df = np.zeros((num_simulations, num_players))
+    gini_arr = []
     for simulation in tqdm(range(num_simulations)):
         game, savers_init = helper_init(
             g,
@@ -210,6 +219,14 @@ def montecarlo_game_network(
             index=np.arange(num_steps + 1), data=savers_final, columns=["total"]
         )
         savers_df = savers_df.join(savers_final, rsuffix=f"_{simulation}")
+        gini, cumsum = get_gini(game)
+        if len(cumsum) != num_players:
+            cumsum = np.roll(
+                np.append(cumsum, np.zeros(num_players - len(cumsum))),
+                num_players - len(cumsum),
+            )
+        cumsum_df[simulation, :] = cumsum
+        gini_arr.append(gini)
 
     wealth = pd.DataFrame(index=np.arange(num_steps))
     for col_name in ["total", "saver", "non-saver"]:
@@ -233,7 +250,36 @@ def montecarlo_game_network(
     savers = savers.join(mean)
     savers = savers.join(std)
 
-    plot_dashboard_network(g, table, savers_init, wealth, savers)
+    data = [
+        num_players,
+        num_steps,
+        num_simulations,
+        differential_efficient,
+        differential_inefficient,
+        memory_length,
+        update_rule.name,
+        f"{round(np.mean(gini_arr), 3)} +/- {round(np.std(gini_arr), 3)}",
+        list_shocks,
+        times_shocks,
+    ]
+    rows = [
+        "Number of players",
+        "Number of steps",
+        "Number of simulations",
+        "Efficient differential",
+        "Inefficient differential",
+        "Length of memory",
+        "Update rule",
+        "Gini coefficient",
+        "Shocks",
+        "Times for shocks",
+    ]
+
+    table = pd.DataFrame(data, index=rows, columns=["Inputs"])
+
+    plot_dashboard_network(
+        g, table, savers_init, wealth, savers, cumsum_df.mean(axis=0)
+    )
 
 
 ##############################
